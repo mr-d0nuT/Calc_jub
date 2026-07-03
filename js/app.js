@@ -166,6 +166,7 @@ function renderResultado(r, nacimiento) {
     if (r.ordinaria) {
       trozos.push(`<div class="resultado-bloque secundario">
         <p><strong>Sin la reducción de policía local</strong> (jubilación ordinaria): <strong>${fmtFecha(r.ordinaria.fecha)}</strong>, al cumplir ${fmtEdad({ anos: r.ordinaria.exigida[0], meses: r.ordinaria.exigida[1] })}. Te adelantas <strong>${fmtEdad(desgloseAnticipo(r.policia.resultado.fecha, r.ordinaria.fecha))}</strong>.</p>
+        <p class="resultado-detalle">${explicacionEdadOrdinaria(r.ordinaria)}</p>
       </div>`);
     }
   } else if (r.policia && !r.policia.elegible) {
@@ -176,11 +177,8 @@ function renderResultado(r, nacimiento) {
   }
 
   if (r.ordinaria && !conPolicia) {
-    const o = r.ordinaria;
     trozos.push(`<div class="resultado-bloque secundario">
-      <p class="resultado-detalle">${o.carreraLarga
-        ? 'Acreditas la cotización mínima para jubilarte a los 65 años (carrera larga).'
-        : 'No se alcanza la cotización mínima de carrera larga, se aplica la edad ordinaria general de ese año.'}</p>
+      <p class="resultado-detalle">${explicacionEdadOrdinaria(r.ordinaria)}</p>
     </div>`);
   }
 
@@ -191,6 +189,18 @@ function renderResultado(r, nacimiento) {
   $('resultado').innerHTML = trozos.join('');
   $('zona-resultado').hidden = false;
   $('zona-resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Explica por qué se aplica 65 (carrera larga) o la edad general (67 desde
+// 2027) — es la duda más habitual al ver el resultado.
+function explicacionEdadOrdinaria(o) {
+  const ano = o.fecha.getFullYear();
+  const umbral = ano >= 2027 ? '38 años y 6 meses' : '38 años y 3 meses';
+  const general = ano >= 2027 ? '67 años' : '66 años y 10 meses';
+  const cotizAnos = (o.cotizados / 365.25).toFixed(1);
+  return o.carreraLarga
+    ? `¿Por qué 65 años y no ${general}? Porque en esa fecha acreditarás ${o.cotizados.toLocaleString('es-ES')} días cotizados (≈ ${cotizAnos} años), por encima del umbral de ${umbral} de «carrera larga»: la ley fija entonces la edad ordinaria en 65 años (art. 205.1.a LGSS). La edad general de ${general} solo se aplica a quien no alcanza esa cotización.`
+    : `Se aplica la edad general de ${general} porque en esa fecha no se alcanza el umbral de ${umbral} cotizados que permitiría jubilarse a los 65 (art. 205.1.a LGSS): acreditarías ${o.cotizados.toLocaleString('es-ES')} días (≈ ${cotizAnos} años).`;
 }
 
 function desgloseAnticipo(antes, despues) {

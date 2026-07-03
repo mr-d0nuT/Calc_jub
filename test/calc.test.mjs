@@ -67,6 +67,30 @@ test('sigue cotizando: los días futuros cuentan para el umbral', () => {
   assert.deepEqual(r.ordinaria.exigida, [65, 0]);
 });
 
+test('desde 2027: 65 años con carrera larga proyectada, 67 sin ella', () => {
+  // Nacido en 1977: cumplirá 65 en 2042. Si sigue cotizando y en esa fecha
+  // supera los 38a6m (14.062 días), la edad ordinaria es 65, no 67.
+  const conCarrera = calcularJubilacion({
+    nacimiento: d('1977-08-28'),
+    diasCotizados: 8500,
+    fechaInforme: d('2026-07-03'),
+    sigueCotizando: true,
+  });
+  assert.equal(iso(conCarrera.ordinaria.fecha), '2042-08-28');
+  assert.deepEqual(conCarrera.ordinaria.exigida, [65, 0]);
+  assert.equal(conCarrera.ordinaria.carreraLarga, true);
+
+  // Con pocos días acumulados no se llega al umbral: edad general de 67.
+  const sinCarrera = calcularJubilacion({
+    nacimiento: d('1977-08-28'),
+    diasCotizados: 5000,
+    fechaInforme: d('2026-07-03'),
+    sigueCotizando: true,
+  });
+  assert.equal(iso(sinCarrera.ordinaria.fecha), '2044-08-28');
+  assert.deepEqual(sinCarrera.ordinaria.exigida, [67, 0]);
+});
+
 test('informe real de ejemplo: 23 años cotizados, nacida en 1948', () => {
   const r = calcularJubilacion({
     nacimiento: d('1948-08-18'),
