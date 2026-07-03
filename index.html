@@ -77,6 +77,15 @@
         </div>
         <p class="nota">La app calcula sola los <strong>años completos de servicio</strong> que tendrás <strong>en la propia fecha de jubilación</strong> (si sigues en activo, cada año que pasa suma reducción). Se asume servicio continuado y cotizado entre las dos fechas; si tuviste interrupciones largas (excedencias, etc.), resta ese tiempo ajustando la fecha de inicio.</p>
       </div>
+      <button type="button" id="btn-gub" class="btn-toggle" aria-expanded="false">🕒 GUB · bolsa de horas específica</button>
+      <div id="bloque-gub" hidden>
+        <div class="campos">
+          <label>Horas que tendrás acumuladas en la bolsa al jubilarte
+            <input type="number" id="gub-horas" min="0" step="1" placeholder="p. ej. 480">
+          </label>
+        </div>
+        <p class="nota">Las horas se convierten en paquetes de <strong>8 h por día laborable</strong> (lunes a viernes; no se descuentan festivos) y se encadenan hacia atrás desde la fecha de jubilación: el resultado es el día a partir del cual ya no tendrías que ir a trabajar.</p>
+      </div>
       <button id="btn-calcular">Calcular fecha de jubilación</button>
     </section>
 

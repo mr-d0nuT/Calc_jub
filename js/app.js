@@ -1,7 +1,7 @@
 import * as pdfjsLib from '../vendor/pdf.min.mjs';
 import { reconstruirLineas, parseVidaLaboral } from './parser.js';
-import { calcularJubilacion, edadEn } from './calc.js';
-import { vizHero, vizKpis, vizMeter, vizCalendario, vizTimeline, activarTooltips } from './viz.js';
+import { calcularJubilacion, edadEn, restarDiasLaborables } from './calc.js';
+import { vizHero, vizKpis, vizMeter, vizCalendario, vizTimeline, activarTooltips, fraseCuentaAtras } from './viz.js';
 
 let ultimasSituaciones = [];
 
@@ -114,11 +114,13 @@ function calcular() {
     entrada.policia = { inicio, fin };
   }
 
+  const gubHoras = !$('bloque-gub').hidden ? Number($('gub-horas').value) || 0 : 0;
+
   const r = calcularJubilacion(entrada);
-  renderResultado(r, nacimiento);
+  renderResultado(r, nacimiento, gubHoras);
 }
 
-function renderResultado(r, nacimiento) {
+function renderResultado(r, nacimiento, gubHoras = 0) {
   const hoy = new Date();
   const trozos = [];
 
@@ -155,6 +157,18 @@ function renderResultado(r, nacimiento) {
       <div class="viz-panel">${vizCalendario(principal.fecha)}</div>
       <div class="viz-panel">${vizMeter(inicioVida, hoy, principal.fecha)}</div>
     </div>`);
+
+    if (gubHoras > 0) {
+      const diasBolsa = Math.floor(gubHoras / 8);
+      const resto = gubHoras % 8;
+      const ultimoDia = restarDiasLaborables(principal.fecha, diasBolsa);
+      trozos.push(`<div class="gub">
+        <p class="gub-titulo">🕒 Con tu bolsa de horas (GUB), tu último día de trabajo real sería antes del</p>
+        <p class="gub-fecha">${fmtFecha(ultimoDia)}</p>
+        <p class="hero-countdown ${ultimoDia <= hoy ? 'pasada' : ''}">${ultimoDia <= hoy ? '✅ ' : '⏳ '}${fraseCuentaAtras(hoy, ultimoDia)}</p>
+        <p class="resultado-detalle">${gubHoras.toLocaleString('es-ES')} h = <strong>${diasBolsa.toLocaleString('es-ES')} días laborables</strong> en paquetes de 8 h${resto ? ` (sobran ${resto} h sueltas)` : ''}. La bolsa cubriría todos los días laborables desde el ${fmtCorta(ultimoDia)} hasta tu jubilación el ${fmtCorta(principal.fecha)} (festivos no descontados).</p>
+      </div>`);
+    }
   }
 
   if (conPolicia) {
@@ -239,5 +253,10 @@ dropzone.addEventListener('drop', (e) => {
 
 $('es-policia').addEventListener('change', (e) => {
   $('bloque-policia').hidden = !e.target.checked;
+});
+$('btn-gub').addEventListener('click', () => {
+  const abierto = $('bloque-gub').hidden;
+  $('bloque-gub').hidden = !abierto;
+  $('btn-gub').setAttribute('aria-expanded', String(abierto));
 });
 $('btn-calcular').addEventListener('click', calcular);

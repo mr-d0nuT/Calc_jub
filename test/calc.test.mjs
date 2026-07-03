@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn } from '../js/calc.js';
+import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn, restarDiasLaborables } from '../js/calc.js';
 
 const d = (s) => new Date(s + 'T00:00:00');
 const iso = (f) =>
@@ -29,6 +29,19 @@ test('addAnosMeses ajusta fin de mes', () => {
 test('edadEn calcula años y meses cumplidos', () => {
   assert.deepEqual(edadEn(d('1960-06-15'), d('2026-06-14')), { anos: 65, meses: 11 });
   assert.deepEqual(edadEn(d('1960-06-15'), d('2026-06-15')), { anos: 66, meses: 0 });
+});
+
+test('restarDiasLaborables salta fines de semana (bolsa de horas GUB)', () => {
+  // 2038-09-15 es miércoles: 1 día laborable atrás → martes 14.
+  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 1)), '2038-09-14');
+  // 3 laborables atrás desde el miércoles → viernes de la semana anterior.
+  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 3)), '2038-09-10');
+  // 5 laborables atrás desde un lunes → el lunes anterior.
+  assert.equal(iso(restarDiasLaborables(d('2027-01-04'), 5)), '2026-12-28');
+  // 0 días: la propia fecha.
+  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 0)), '2038-09-15');
+  // 480 h / 8 = 60 laborables = 12 semanas exactas hacia atrás.
+  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 60)), '2038-06-23');
 });
 
 test('carrera larga: se jubila a los 65', () => {

@@ -77,6 +77,20 @@ function edadMayorOIgual(edad, [anos, meses]) {
   return edad.anos > anos || (edad.anos === anos && edad.meses >= meses);
 }
 
+// Resta N días laborables (lunes a viernes; no se descuentan festivos) a una
+// fecha. Devuelve el primer día del tramo cubierto: desde ese día ya no habría
+// que ir a trabajar si la bolsa cubre todos los laborables hasta `fecha`.
+export function restarDiasLaborables(fecha, dias) {
+  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  let restantes = dias;
+  while (restantes > 0) {
+    d.setDate(d.getDate() - 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) restantes -= 1;
+  }
+  return d;
+}
+
 /**
  * Calcula la fecha de jubilación.
  *
