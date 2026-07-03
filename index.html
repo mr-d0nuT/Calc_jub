@@ -65,13 +65,16 @@
         <input type="checkbox" id="es-policia">
         Soy policía local <span class="etiqueta">RD 1449/2018 · jubilación anticipada</span>
       </label>
-      <div id="campos-policia" class="campos" hidden>
-        <label>Años completos trabajados como policía local
-          <input type="number" id="policia-trabajados" min="0" max="50" step="1" value="">
-        </label>
-        <label>Años cotizados como policía local
-          <input type="number" id="policia-cotizados" min="0" max="50" step="1" value="">
-        </label>
+      <div id="bloque-policia" hidden>
+        <div class="campos">
+          <label>¿Desde cuándo trabajas como policía local?
+            <input type="date" id="policia-inicio">
+          </label>
+          <label>¿Hasta cuándo? <span class="opcional">(déjalo vacío si sigues en activo)</span>
+            <input type="date" id="policia-fin">
+          </label>
+        </div>
+        <p class="nota">La app calcula sola los <strong>años completos de servicio</strong> que tendrás <strong>en la propia fecha de jubilación</strong> (si sigues en activo, cada año que pasa suma reducción). Se asume servicio continuado y cotizado entre las dos fechas; si tuviste interrupciones largas (excedencias, etc.), resta ese tiempo ajustando la fecha de inicio.</p>
       </div>
       <button id="btn-calcular">Calcular fecha de jubilación</button>
     </section>

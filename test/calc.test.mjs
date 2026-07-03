@@ -89,31 +89,48 @@ test('carencia insuficiente genera aviso', () => {
   assert.ok(r.avisos.some((a) => a.includes('15 años')));
 });
 
-test('policía local: 25 años → 5 años de anticipación', () => {
-  const r = calcularJubilacion({
-    nacimiento: d('1966-01-15'),
-    diasCotizados: 15000,
-    fechaInforme: d('2026-07-03'),
-    sigueCotizando: false,
-    policia: { anosTrabajados: 25, anosCotizados: 25 },
-  });
-  assert.equal(r.policia.elegible, true);
-  assert.equal(r.policia.reduccionMeses, 60);
-  assert.equal(iso(r.policia.resultado.fecha), '2026-01-15'); // 60 años
-});
-
-test('policía local: tope de anticipación de 6 años con carrera larga', () => {
+test('policía local: 25 años de servicio (con fecha de fin) → 5 años de anticipación', () => {
   const r = calcularJubilacion({
     nacimiento: d('1968-05-20'),
     diasCotizados: 15500,
     fechaInforme: d('2026-07-03'),
     sigueCotizando: false,
-    policia: { anosTrabajados: 35, anosCotizados: 35 },
+    policia: { inicio: d('1995-01-01'), fin: d('2020-01-01') }, // 25 años justos
   });
-  assert.equal(r.policia.reduccionMeses, 84); // 0,20 × 35 = 7 años
+  assert.equal(r.policia.elegible, true);
+  assert.equal(r.policia.anosServicio, 25);
+  assert.equal(r.policia.reduccionAplicadaMeses, 60); // 0,20 × 25 = 5 años
+  assert.equal(iso(r.policia.resultado.fecha), '2028-05-20'); // 60 años (65 − 5)
+});
+
+test('policía local: tope de anticipación de 6 años con carrera larga', () => {
+  const r = calcularJubilacion({
+    nacimiento: d('1969-03-15'),
+    diasCotizados: 16000,
+    fechaInforme: d('2026-07-03'),
+    sigueCotizando: false,
+    policia: { inicio: d('1988-01-01'), fin: d('2024-01-01') }, // 36 años
+  });
+  assert.equal(r.policia.reduccionTeoricaMeses, 86); // 0,20 × 36 = 7,2 años
   assert.equal(r.policia.reduccionAplicadaMeses, 72); // tope 6 años
-  assert.equal(iso(r.policia.resultado.fecha), '2027-05-20'); // 59 años
+  assert.equal(iso(r.policia.resultado.fecha), '2028-03-15'); // 59 años (65 − 6)
   assert.ok(r.policia.motivos.some((m) => m.includes('tope')));
+});
+
+test('policía local en activo: los años de servicio se computan en la fecha de jubilación', () => {
+  const r = calcularJubilacion({
+    nacimiento: d('1972-01-01'),
+    diasCotizados: 13000,
+    fechaInforme: d('2026-07-03'),
+    sigueCotizando: true,
+    policia: { inicio: d('2005-01-01'), fin: null }, // sigue en activo
+  });
+  // A fecha del informe lleva 21 años (reducción 4a2m), pero al seguir en
+  // activo la reducción crece: la primera fecha válida es con 26 años de
+  // servicio (reducción 62 meses) a los 59 años y 10 meses de edad.
+  assert.equal(r.policia.anosServicio, 26);
+  assert.equal(r.policia.reduccionAplicadaMeses, 62);
+  assert.equal(iso(r.policia.resultado.fecha), '2031-11-01');
 });
 
 test('policía local: sin 15 años cotizados no es elegible', () => {
@@ -122,7 +139,8 @@ test('policía local: sin 15 años cotizados no es elegible', () => {
     diasCotizados: 15000,
     fechaInforme: d('2026-07-03'),
     sigueCotizando: false,
-    policia: { anosTrabajados: 12, anosCotizados: 12 },
+    policia: { inicio: d('2010-01-01'), fin: d('2022-01-01') }, // 12 años
   });
   assert.equal(r.policia.elegible, false);
+  assert.ok(r.policia.motivos.some((m) => m.includes('15 años')));
 });

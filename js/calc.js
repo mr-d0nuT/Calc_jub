@@ -85,7 +85,8 @@ function edadMayorOIgual(edad, [anos, meses]) {
  * @param {number} p.diasCotizados     Días computables según el informe.
  * @param {Date}   p.fechaInforme      Fecha de emisión del informe.
  * @param {boolean} p.sigueCotizando   Si sigue de alta hasta la jubilación.
- * @param {Object} [p.policia]         { anosTrabajados, anosCotizados }
+ * @param {Object} [p.policia]         { inicio: Date, fin: Date|null } período
+ *                                     de servicio (continuado) como policía local.
  */
 export function calcularJubilacion(p) {
   const { nacimiento, diasCotizados, fechaInforme, sigueCotizando } = p;
@@ -97,24 +98,22 @@ export function calcularJubilacion(p) {
 
   // Primera fecha (búsqueda diaria) en que la edad alcanza la edad ordinaria
   // exigida ese día según la cotización acreditada en ese momento. Una
-  // reducción de edad (policía local) actúa como edad "virtual" mayor.
-  const buscarFecha = (reduccionMeses = 0, cap6 = null) => {
-    let fecha = addAnosMeses(nacimiento, 59, 0); // antes de 60 nunca procede
+  // reducción de edad (policía local) actúa como edad "virtual" mayor;
+  // `reduccionEn(fecha, cotizados)` devuelve los meses de reducción vigentes
+  // ese día, ya topados.
+  const buscarFecha = (reduccionEn = null) => {
+    let fecha = addAnosMeses(nacimiento, 59, 0); // antes de 59 nunca procede
     const limite = addAnosMeses(nacimiento, 68, 0);
     while (fecha <= limite) {
       const entrada = entradaTabla(fecha.getFullYear());
       const cot = cotizadosEn(fecha);
       const exigida = cot >= umbralDias(...entrada.carrera) ? [65, 0] : entrada.edad;
       const edad = edadEn(nacimiento, fecha);
-      let red = reduccionMeses;
-      if (red > 0) {
-        // Tope de anticipación: 5 años, o 6 si se acredita la escala transitoria.
-        const capAnos = cap6 && cot >= umbralDias(escalaPolicia6(fecha.getFullYear()), 0) ? 6 : 5;
-        red = Math.min(red, capAnos * 12);
-      }
+      const detalle = reduccionEn ? reduccionEn(fecha, cot) : { meses: 0 };
+      const red = detalle.meses;
       const virtual = { anos: edad.anos + Math.floor((edad.meses + red) / 12), meses: (edad.meses + red) % 12 };
       if (edadMayorOIgual(virtual, exigida)) {
-        return { fecha, edad, exigida, cotizados: cot, reduccionAplicada: red, carreraLarga: cot >= umbralDias(...entrada.carrera) };
+        return { fecha, edad, exigida, cotizados: cot, reduccionAplicada: red, detalle, carreraLarga: cot >= umbralDias(...entrada.carrera) };
       }
       fecha = addDias(fecha, 1);
     }
@@ -131,23 +130,47 @@ export function calcularJubilacion(p) {
   resultado.ordinaria = buscarFecha(0);
 
   if (p.policia) {
-    const { anosTrabajados, anosCotizados } = p.policia;
-    const pol = { anosTrabajados, anosCotizados, elegible: true, motivos: [] };
-    if (anosCotizados < 15) {
+    const { inicio, fin } = p.policia;
+    const pol = { elegible: true, motivos: [] };
+
+    // Años completos de servicio como policía local acreditados en una fecha
+    // dada. Se asume servicio continuado y cotizado desde `inicio` hasta `fin`
+    // (o hasta la propia fecha si sigue en activo; si no sigue cotizando, se
+    // congela en la fecha del informe).
+    const anosPoliciaEn = (fecha) => {
+      const topes = [fecha.getTime()];
+      if (fin) topes.push(fin.getTime());
+      if (!fin && !sigueCotizando) topes.push(fechaInforme.getTime());
+      const hasta = new Date(Math.min(...topes));
+      return hasta <= inicio ? 0 : edadEn(inicio, hasta).anos;
+    };
+
+    const maxAnos = anosPoliciaEn(addAnosMeses(nacimiento, 68, 0));
+    if (maxAnos < 15) {
       pol.elegible = false;
-      pol.motivos.push('El RD 1449/2018 exige un mínimo de 15 años cotizados como policía local para aplicar el coeficiente reductor.');
+      pol.motivos.push(`El RD 1449/2018 exige un mínimo de 15 años cotizados como policía local para aplicar el coeficiente reductor (con las fechas indicadas se acreditan como máximo ${maxAnos}).`);
     }
+
     if (pol.elegible) {
       // Art. 2.1 RD 1449/2018: reducción = 0,20 × años completos efectivamente
-      // trabajados como policía local (en meses completos, redondeo a la baja).
-      const reduccionMeses = Math.floor(0.20 * Math.floor(anosTrabajados) * 12);
-      pol.reduccionMeses = reduccionMeses;
-      pol.resultado = buscarFecha(reduccionMeses, true);
+      // trabajados como policía local, evaluados en la propia fecha candidata
+      // de jubilación (en meses completos, redondeo a la baja). Tope del
+      // art. 2.2: 5 años, o 6 si se acredita la escala transitoria.
+      const reduccionEn = (fecha, cot) => {
+        const anos = anosPoliciaEn(fecha);
+        if (anos < 15) return { meses: 0, anosServicio: anos, mesesTeoricos: 0 };
+        const mesesTeoricos = Math.floor(0.20 * anos * 12);
+        const capAnos = cot >= umbralDias(escalaPolicia6(fecha.getFullYear()), 0) ? 6 : 5;
+        return { meses: Math.min(mesesTeoricos, capAnos * 12), anosServicio: anos, mesesTeoricos, capAnos };
+      };
+      pol.resultado = buscarFecha(reduccionEn);
       if (pol.resultado) {
+        const det = pol.resultado.detalle;
+        pol.anosServicio = det.anosServicio;
+        pol.reduccionTeoricaMeses = det.mesesTeoricos;
         pol.reduccionAplicadaMeses = pol.resultado.reduccionAplicada;
-        if (pol.resultado.reduccionAplicada < reduccionMeses) {
-          const capAnos = pol.resultado.reduccionAplicada / 12;
-          pol.motivos.push(`La reducción de ${Math.floor(reduccionMeses / 12)} años y ${reduccionMeses % 12} meses supera el tope legal: se aplica el máximo de ${capAnos} años (art. 2.2 RD 1449/2018).`);
+        if (det.mesesTeoricos > pol.resultado.reduccionAplicada) {
+          pol.motivos.push(`La reducción teórica de ${Math.floor(det.mesesTeoricos / 12)} años y ${det.mesesTeoricos % 12} meses (0,20 × ${det.anosServicio} años de servicio) supera el tope legal: se aplica el máximo de ${det.capAnos} años (art. 2.2 RD 1449/2018).`);
         }
         // Art. 4: el período reducido cuenta como cotizado para el porcentaje.
         pol.diasBonificados = pol.resultado.reduccionAplicada > 0

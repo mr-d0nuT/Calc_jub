@@ -123,6 +123,8 @@ input[type="date"], input[type="number"] {
 }
 .check input { width: 1.15rem; height: 1.15rem; accent-color: var(--acento); }
 
+.opcional { font-weight: 400; color: var(--texto-suave); font-size: 0.85em; }
+
 .etiqueta {
   font-size: 0.75rem;
   background: var(--acento-claro);

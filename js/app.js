@@ -99,10 +99,11 @@ function calcular() {
     sigueCotizando: $('sigue-cotizando').checked,
   };
   if ($('es-policia').checked) {
-    entrada.policia = {
-      anosTrabajados: Number($('policia-trabajados').value) || 0,
-      anosCotizados: Number($('policia-cotizados').value) || 0,
-    };
+    const inicio = deInputDate($('policia-inicio').value);
+    if (!inicio) return mostrarError('Indica desde cuándo trabajas como policía local (paso 3).');
+    const fin = deInputDate($('policia-fin').value);
+    if (fin && fin <= inicio) return mostrarError('La fecha de fin como policía local debe ser posterior a la de inicio.');
+    entrada.policia = { inicio, fin };
   }
 
   const r = calcularJubilacion(entrada);
@@ -125,7 +126,7 @@ function renderResultado(r, nacimiento) {
         <p><strong>Jubilación anticipada como policía local</strong> (RD 1449/2018)</p>
         <p class="resultado-fecha">${fmtFecha(p.resultado.fecha)}</p>
         <p class="resultado-detalle">${pasada ? 'Ya cumples las condiciones desde esa fecha.' : `Con ${fmtEdad(edadEn(nacimiento, p.resultado.fecha))} de edad.`}</p>
-        <p class="resultado-detalle">Reducción aplicada: ${Math.floor(p.reduccionAplicadaMeses / 12)} años y ${p.reduccionAplicadaMeses % 12} meses (0,20 × ${Math.floor(p.anosTrabajados)} años de servicio).</p>
+        <p class="resultado-detalle">En esa fecha acreditarás <strong>${p.anosServicio} años completos de servicio</strong> como policía local → reducción aplicada: ${Math.floor(p.reduccionAplicadaMeses / 12)} años y ${p.reduccionAplicadaMeses % 12} meses (0,20 × ${p.anosServicio} años, art. 2.1).</p>
         <p class="resultado-detalle">Cotización estimada en esa fecha: ${p.resultado.cotizados.toLocaleString('es-ES')} días. El período anticipado (${p.diasBonificados.toLocaleString('es-ES')} días) cuenta como cotizado para el porcentaje de la pensión (art. 4).</p>
         ${p.motivos.map((m) => `<p class="resultado-detalle">ℹ️ ${m}</p>`).join('')}
       </div>`);
@@ -179,6 +180,6 @@ dropzone.addEventListener('drop', (e) => {
 });
 
 $('es-policia').addEventListener('change', (e) => {
-  $('campos-policia').hidden = !e.target.checked;
+  $('bloque-policia').hidden = !e.target.checked;
 });
 $('btn-calcular').addEventListener('click', calcular);

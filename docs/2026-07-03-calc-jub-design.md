@@ -23,7 +23,7 @@ App web que recibe el PDF del *Informe de Vida Laboral* de la TGSS y calcula la 
 ## Reglas implementadas
 
 1. **Edad ordinaria** (art. 205 + DT 7.ª LGSS): 65 años si se acredita la carrera larga del año (2026: 38 a 3 m; 2027+: 38 a 6 m); si no, la edad general del año (2026: 66 a 10 m; 2027+: 67).
-2. **Policía local** (RD 1449/2018): reducción = 0,20 × años completos de servicio efectivo; tope 5 años (6 si se acredita la escala transitoria: 36,5 años en 2023–2026, 37 desde 2027); requisito de 15 años cotizados como policía local; el período reducido computa como cotizado solo para el porcentaje (art. 4).
+2. **Policía local** (RD 1449/2018): reducción = 0,20 × años completos de servicio efectivo; tope 5 años (6 si se acredita la escala transitoria: 36,5 años en 2023–2026, 37 desde 2027); requisito de 15 años cotizados como policía local; el período reducido computa como cotizado solo para el porcentaje (art. 4). El usuario introduce las **fechas de inicio y fin** (fin vacío = en activo) del servicio policial y los años completos se evalúan **en cada fecha candidata de jubilación**, no a fecha de hoy (si sigue en activo, la reducción crece con el tiempo).
 3. **Proyección**: si el usuario sigue de alta, los días entre la fecha del informe y la fecha candidata se suman a la cotización.
 4. **Conversión**: umbrales años/meses → días con año medio de 365,25 días.
 5. La fecha se obtiene por **búsqueda diaria** (primera fecha en que la edad —real o reducida— alcanza la exigida ese día con la cotización de ese momento), lo que resuelve la circularidad edad↔año↔cotización.
