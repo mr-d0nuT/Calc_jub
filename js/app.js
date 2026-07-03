@@ -1,6 +1,9 @@
 import * as pdfjsLib from '../vendor/pdf.min.mjs';
 import { reconstruirLineas, parseVidaLaboral } from './parser.js';
 import { calcularJubilacion, edadEn } from './calc.js';
+import { vizHero, vizKpis, vizMeter, vizCalendario, vizTimeline, activarTooltips } from './viz.js';
+
+let ultimasSituaciones = [];
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdf.worker.min.mjs', import.meta.url).href;
 
@@ -62,7 +65,12 @@ function rellenarFormulario(datos) {
   resumen.innerHTML = partes.join(' · ');
   resumen.hidden = partes.length === 0;
 
+  ultimasSituaciones = datos.situaciones;
   if (datos.situaciones.length) {
+    const cont = $('viz-vida-laboral');
+    cont.innerHTML = vizTimeline(datos.situaciones, new Date());
+    cont.hidden = false;
+    activarTooltips(cont);
     const tbody = $('tabla-situaciones').querySelector('tbody');
     tbody.innerHTML = '';
     for (const s of datos.situaciones) {
@@ -118,45 +126,79 @@ function renderResultado(r, nacimiento) {
     trozos.push(`<p class="aviso">⚠️ ${aviso}</p>`);
   }
 
-  if (r.policia) {
-    const p = r.policia;
-    if (p.elegible && p.resultado) {
-      const pasada = p.resultado.fecha <= hoy;
-      trozos.push(`<div class="resultado-bloque">
-        <p><strong>Jubilación anticipada como policía local</strong> (RD 1449/2018)</p>
-        <p class="resultado-fecha">${fmtFecha(p.resultado.fecha)}</p>
-        <p class="resultado-detalle">${pasada ? 'Ya cumples las condiciones desde esa fecha.' : `Con ${fmtEdad(edadEn(nacimiento, p.resultado.fecha))} de edad.`}</p>
-        <p class="resultado-detalle">En esa fecha acreditarás <strong>${p.anosServicio} años completos de servicio</strong> como policía local → reducción aplicada: ${Math.floor(p.reduccionAplicadaMeses / 12)} años y ${p.reduccionAplicadaMeses % 12} meses (0,20 × ${p.anosServicio} años, art. 2.1).</p>
-        <p class="resultado-detalle">Cotización estimada en esa fecha: ${p.resultado.cotizados.toLocaleString('es-ES')} días. El período anticipado (${p.diasBonificados.toLocaleString('es-ES')} días) cuenta como cotizado para el porcentaje de la pensión (art. 4).</p>
-        ${p.motivos.map((m) => `<p class="resultado-detalle">ℹ️ ${m}</p>`).join('')}
-      </div>`);
-    } else {
-      trozos.push(`<div class="resultado-bloque secundario">
-        <p><strong>Jubilación anticipada como policía local</strong></p>
-        ${p.motivos.map((m) => `<p class="aviso">⚠️ ${m}</p>`).join('')}
-      </div>`);
+  const conPolicia = r.policia?.elegible && r.policia.resultado;
+  const principal = conPolicia ? r.policia.resultado : r.ordinaria;
+  const tituloHero = conPolicia
+    ? 'Como policía local, te podrás jubilar el'
+    : 'Te podrás jubilar el';
+
+  if (principal) {
+    trozos.push(`<div class="hero">${vizHero(tituloHero, principal.fecha, hoy)}</div>`);
+
+    const tiles = [
+      { label: 'Edad en esa fecha', valor: fmtEdad(edadEn(nacimiento, principal.fecha)) },
+      { label: 'Cotización acreditada', valor: `${principal.cotizados.toLocaleString('es-ES')} días`, detalle: `≈ ${(principal.cotizados / 365.25).toFixed(1)} años` },
+    ];
+    if (conPolicia) {
+      const p = r.policia;
+      tiles.push({ label: 'Años de servicio policial', valor: `${p.anosServicio} años`, detalle: 'en la fecha de jubilación' });
+      tiles.push({ label: 'Reducción aplicada', valor: fmtEdad({ anos: Math.floor(p.reduccionAplicadaMeses / 12), meses: p.reduccionAplicadaMeses % 12 }), detalle: `0,20 × ${p.anosServicio} años (RD 1449/2018)` });
+    } else if (r.ordinaria) {
+      tiles.push({ label: 'Edad ordinaria exigida', valor: fmtEdad({ anos: principal.exigida[0], meses: principal.exigida[1] }), detalle: principal.carreraLarga ? 'carrera larga acreditada' : 'edad general del año' });
     }
+    trozos.push(vizKpis(tiles));
+
+    const inicioVida = ultimasSituaciones.length
+      ? new Date(Math.min(...ultimasSituaciones.filter((s) => s.fechaAlta).map((s) => s.fechaAlta.getTime())))
+      : new Date(nacimiento.getFullYear() + 16, nacimiento.getMonth(), nacimiento.getDate());
+    trozos.push(`<div class="viz-grid">
+      <div class="viz-panel">${vizCalendario(principal.fecha)}</div>
+      <div class="viz-panel">${vizMeter(inicioVida, hoy, principal.fecha)}</div>
+    </div>`);
   }
 
-  if (r.ordinaria) {
+  if (conPolicia) {
+    const p = r.policia;
+    trozos.push(`<div class="resultado-bloque">
+      <p class="resultado-detalle">El período anticipado (${p.diasBonificados.toLocaleString('es-ES')} días) cuenta como cotizado para el porcentaje de la pensión (art. 4 RD 1449/2018).</p>
+      ${p.motivos.map((m) => `<p class="resultado-detalle">ℹ️ ${m}</p>`).join('')}
+    </div>`);
+    if (r.ordinaria) {
+      trozos.push(`<div class="resultado-bloque secundario">
+        <p><strong>Sin la reducción de policía local</strong> (jubilación ordinaria): <strong>${fmtFecha(r.ordinaria.fecha)}</strong>, al cumplir ${fmtEdad({ anos: r.ordinaria.exigida[0], meses: r.ordinaria.exigida[1] })}. Te adelantas <strong>${fmtEdad(desgloseAnticipo(r.policia.resultado.fecha, r.ordinaria.fecha))}</strong>.</p>
+      </div>`);
+    }
+  } else if (r.policia && !r.policia.elegible) {
+    trozos.push(`<div class="resultado-bloque secundario">
+      <p><strong>Jubilación anticipada como policía local</strong></p>
+      ${r.policia.motivos.map((m) => `<p class="aviso">⚠️ ${m}</p>`).join('')}
+    </div>`);
+  }
+
+  if (r.ordinaria && !conPolicia) {
     const o = r.ordinaria;
-    const pasada = o.fecha <= hoy;
-    trozos.push(`<div class="resultado-bloque ${r.policia?.elegible ? 'secundario' : ''}">
-      <p><strong>Jubilación ordinaria</strong></p>
-      <p class="resultado-fecha">${fmtFecha(o.fecha)}</p>
-      <p class="resultado-detalle">${pasada ? 'Ya has alcanzado la edad ordinaria de jubilación.' : `Al cumplir ${fmtEdad({ anos: o.exigida[0], meses: o.exigida[1] })}.`}</p>
+    trozos.push(`<div class="resultado-bloque secundario">
       <p class="resultado-detalle">${o.carreraLarga
         ? 'Acreditas la cotización mínima para jubilarte a los 65 años (carrera larga).'
         : 'No se alcanza la cotización mínima de carrera larga, se aplica la edad ordinaria general de ese año.'}</p>
-      <p class="resultado-detalle">Cotización estimada en esa fecha: ${o.cotizados.toLocaleString('es-ES')} días.</p>
     </div>`);
-  } else {
+  }
+
+  if (!principal) {
     trozos.push('<p class="aviso">No se ha podido determinar la fecha de jubilación con los datos introducidos.</p>');
   }
 
   $('resultado').innerHTML = trozos.join('');
   $('zona-resultado').hidden = false;
   $('zona-resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function desgloseAnticipo(antes, despues) {
+  let anos = despues.getFullYear() - antes.getFullYear();
+  let meses = despues.getMonth() - antes.getMonth();
+  if (despues.getDate() < antes.getDate()) meses -= 1;
+  if (meses < 0) { anos -= 1; meses += 12; }
+  return { anos, meses };
 }
 
 // --- Eventos ---

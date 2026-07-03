@@ -5,10 +5,18 @@
   --texto-suave: #5b6b7b;
   --acento: #0b6e4f;
   --acento-claro: #e3f2ec;
+  --acento-track: #cfe8dd;
   --borde: #d9e0e8;
   --error: #b3261e;
   --aviso-fondo: #fff7e0;
   --aviso-borde: #e6c15a;
+  --sombra: 0 1px 3px rgba(16, 30, 44, 0.06), 0 8px 24px rgba(16, 30, 44, 0.05);
+  /* Paleta categórica de gráficos (validada, orden fijo) */
+  --chart-1: #2a78d6;
+  --chart-2: #1baf7a;
+  --chart-3: #eda100;
+  --chart-4: #4a3aa7;
+  --chart-otros: #898781;
   color-scheme: light dark;
 }
 
@@ -20,10 +28,17 @@
     --texto-suave: #9fb0c0;
     --acento: #4ecb99;
     --acento-claro: #143528;
+    --acento-track: #1d3d30;
     --borde: #2c3947;
     --error: #ff8a80;
     --aviso-fondo: #33290f;
     --aviso-borde: #8a742e;
+    --sombra: 0 1px 3px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.28);
+    --chart-1: #3987e5;
+    --chart-2: #199e70;
+    --chart-3: #c98500;
+    --chart-4: #9085e9;
+    --chart-otros: #898781;
   }
 }
 
@@ -51,9 +66,10 @@ h1 { margin: 0; font-size: 2.2rem; letter-spacing: -0.02em; }
 .tarjeta {
   background: var(--tarjeta);
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 1.5rem;
   margin: 1.25rem 0;
+  box-shadow: var(--sombra);
 }
 
 h2 { margin-top: 0; font-size: 1.15rem; }
@@ -171,4 +187,154 @@ footer {
   padding: 1rem 1.25rem 2.5rem;
   color: var(--texto-suave);
   font-size: 0.85rem;
+}
+
+/* ===== Visualizaciones ===== */
+
+.viz-titulo {
+  margin: 0 0 0.6rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Hero: fecha protagonista + cuenta atrás */
+.hero { text-align: center; padding: 0.6rem 0 1rem; }
+.hero-etiqueta {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.hero-fecha {
+  margin: 0.3rem 0;
+  font-size: clamp(1.8rem, 5.5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--acento);
+}
+.hero-countdown {
+  display: inline-block;
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  background: var(--acento-claro);
+  font-weight: 600;
+}
+
+/* Stat tiles */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.kpi {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.kpi-label { font-size: 0.8rem; color: var(--texto-suave); }
+.kpi-valor { font-size: 1.35rem; font-weight: 700; }
+.kpi-detalle { font-size: 0.78rem; color: var(--texto-suave); }
+
+/* Calendario + meter en dos columnas */
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.viz-panel {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+/* Mini-calendario */
+.calendario {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.cal-cab { color: var(--texto-suave); font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0; }
+.cal-dia { padding: 0.28rem 0; border-radius: 50%; color: var(--texto-suave); }
+.cal-marcado {
+  background: var(--acento);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 0 0 3px var(--acento-claro);
+}
+
+/* Meter de progreso (relleno y pista del mismo tono, regla del meter) */
+.meter {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--acento-track);
+  margin: 1.4rem 0 0.5rem;
+}
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--acento);
+  transition: width 0.6s ease;
+}
+.meter-marca {
+  position: absolute;
+  top: -6px;
+  width: 4px;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--texto);
+}
+.meter-pct {
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.meter-extremos {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+/* Línea temporal de la vida laboral */
+#viz-vida-laboral { margin: 1.2rem 0 0.6rem; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-bottom: 0.5rem; font-size: 0.82rem; }
+.leyenda-item { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--texto-suave); }
+.leyenda-dot { width: 10px; height: 10px; border-radius: 50%; }
+.tl-scroll { overflow-x: auto; }
+.timeline { width: 100%; height: auto; display: block; min-width: 480px; }
+.tl-grid { stroke: var(--borde); stroke-width: 1; }
+.tl-tick { fill: var(--texto-suave); font-size: 11px; }
+.tl-hoy { stroke: var(--texto); stroke-width: 1.5; stroke-dasharray: none; opacity: 0.55; }
+.tl-hoy-txt { fill: var(--texto-suave); font-size: 10px; font-weight: 700; }
+.tl-fila { cursor: default; }
+.tl-fila:hover rect:last-child { filter: brightness(1.15); }
+
+#viz-tooltip {
+  position: fixed;
+  z-index: 50;
+  max-width: 300px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--texto);
+  color: var(--tarjeta);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+  box-shadow: var(--sombra);
 }
