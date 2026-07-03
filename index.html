@@ -83,8 +83,11 @@
           <label>Horas que tendrás acumuladas en la bolsa al jubilarte
             <input type="number" id="gub-horas" min="0" step="1" placeholder="p. ej. 480">
           </label>
+          <label>Horas anuales de trabajo según convenio <span class="opcional">(GUB turno de día: 1.519 h)</span>
+            <input type="number" id="gub-horas-anuales" min="1" step="1" value="1519">
+          </label>
         </div>
-        <p class="nota">Las horas se convierten en paquetes de <strong>8 h por día laborable</strong> (lunes a viernes; no se descuentan festivos) y se encadenan hacia atrás desde la fecha de jubilación: el resultado es el día a partir del cual ya no tendrías que ir a trabajar.</p>
+        <p class="nota">La bolsa se disfruta en turnos de <strong>8 h</strong>. Como tu calendario anual de convenio es de 1.519 h (~190 turnos/año), cada turno de bolsa cubre ≈ 1,9 días naturales: el cálculo resta de la fecha de jubilación la fracción de año de trabajo que cubren tus horas (horas ÷ horas anuales × 365).</p>
       </div>
       <button id="btn-calcular">Calcular fecha de jubilación</button>
     </section>

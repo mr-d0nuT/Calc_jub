@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn, restarDiasLaborables } from '../js/calc.js';
+import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn, restarHorasBolsa } from '../js/calc.js';
 
 const d = (s) => new Date(s + 'T00:00:00');
 const iso = (f) =>
@@ -31,17 +31,19 @@ test('edadEn calcula años y meses cumplidos', () => {
   assert.deepEqual(edadEn(d('1960-06-15'), d('2026-06-15')), { anos: 66, meses: 0 });
 });
 
-test('restarDiasLaborables salta fines de semana (bolsa de horas GUB)', () => {
-  // 2038-09-15 es miércoles: 1 día laborable atrás → martes 14.
-  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 1)), '2038-09-14');
-  // 3 laborables atrás desde el miércoles → viernes de la semana anterior.
-  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 3)), '2038-09-10');
-  // 5 laborables atrás desde un lunes → el lunes anterior.
-  assert.equal(iso(restarDiasLaborables(d('2027-01-04'), 5)), '2026-12-28');
-  // 0 días: la propia fecha.
-  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 0)), '2038-09-15');
-  // 480 h / 8 = 60 laborables = 12 semanas exactas hacia atrás.
-  assert.equal(iso(restarDiasLaborables(d('2038-09-15'), 60)), '2038-06-23');
+test('restarHorasBolsa con calendario de convenio GUB (1.519 h/año)', () => {
+  // Un año completo de bolsa: 1.519 h → 365 días naturales atrás.
+  const anual = restarHorasBolsa(d('2038-09-15'), 1519, 1519);
+  assert.equal(anual.diasNaturales, 365);
+  assert.equal(iso(anual.fecha), '2037-09-15');
+  // 480 h = 60 turnos de 8 h ≈ 115 días naturales (cada turno ≈ 1,9 días).
+  const b = restarHorasBolsa(d('2038-09-15'), 480, 1519);
+  assert.equal(b.turnos, 60);
+  assert.equal(b.diasNaturales, 115);
+  assert.equal(iso(b.fecha), '2038-05-23');
+  assert.ok(Math.abs(b.diasPorTurno - 1.92) < 0.01);
+  // 0 horas: la propia fecha.
+  assert.equal(iso(restarHorasBolsa(d('2038-09-15'), 0).fecha), '2038-09-15');
 });
 
 test('carrera larga: se jubila a los 65', () => {

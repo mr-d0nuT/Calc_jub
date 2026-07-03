@@ -1,6 +1,6 @@
 import * as pdfjsLib from '../vendor/pdf.min.mjs';
 import { reconstruirLineas, parseVidaLaboral } from './parser.js';
-import { calcularJubilacion, edadEn, restarDiasLaborables } from './calc.js';
+import { calcularJubilacion, edadEn, restarHorasBolsa } from './calc.js';
 import { vizHero, vizKpis, vizMeter, vizCalendario, vizTimeline, activarTooltips, fraseCuentaAtras } from './viz.js';
 
 let ultimasSituaciones = [];
@@ -114,13 +114,15 @@ function calcular() {
     entrada.policia = { inicio, fin };
   }
 
-  const gubHoras = !$('bloque-gub').hidden ? Number($('gub-horas').value) || 0 : 0;
+  const gub = !$('bloque-gub').hidden
+    ? { horas: Number($('gub-horas').value) || 0, horasAnuales: Number($('gub-horas-anuales').value) || 1519 }
+    : null;
 
   const r = calcularJubilacion(entrada);
-  renderResultado(r, nacimiento, gubHoras);
+  renderResultado(r, nacimiento, gub);
 }
 
-function renderResultado(r, nacimiento, gubHoras = 0) {
+function renderResultado(r, nacimiento, gub = null) {
   const hoy = new Date();
   const trozos = [];
 
@@ -158,15 +160,13 @@ function renderResultado(r, nacimiento, gubHoras = 0) {
       <div class="viz-panel">${vizMeter(inicioVida, hoy, principal.fecha)}</div>
     </div>`);
 
-    if (gubHoras > 0) {
-      const diasBolsa = Math.floor(gubHoras / 8);
-      const resto = gubHoras % 8;
-      const ultimoDia = restarDiasLaborables(principal.fecha, diasBolsa);
+    if (gub && gub.horas > 0) {
+      const b = restarHorasBolsa(principal.fecha, gub.horas, gub.horasAnuales);
       trozos.push(`<div class="gub">
-        <p class="gub-titulo">🕒 Con tu bolsa de horas (GUB), tu último día de trabajo real sería antes del</p>
-        <p class="gub-fecha">${fmtFecha(ultimoDia)}</p>
-        <p class="hero-countdown ${ultimoDia <= hoy ? 'pasada' : ''}">${ultimoDia <= hoy ? '✅ ' : '⏳ '}${fraseCuentaAtras(hoy, ultimoDia)}</p>
-        <p class="resultado-detalle">${gubHoras.toLocaleString('es-ES')} h = <strong>${diasBolsa.toLocaleString('es-ES')} días laborables</strong> en paquetes de 8 h${resto ? ` (sobran ${resto} h sueltas)` : ''}. La bolsa cubriría todos los días laborables desde el ${fmtCorta(ultimoDia)} hasta tu jubilación el ${fmtCorta(principal.fecha)} (festivos no descontados).</p>
+        <p class="gub-titulo">🕒 Con tu bolsa de horas (GUB), podrías dejar de ir a trabajar el</p>
+        <p class="gub-fecha">${fmtFecha(b.fecha)}</p>
+        <p class="hero-countdown ${b.fecha <= hoy ? 'pasada' : ''}">${b.fecha <= hoy ? '✅ ' : '⏳ '}${fraseCuentaAtras(hoy, b.fecha)}</p>
+        <p class="resultado-detalle">${gub.horas.toLocaleString('es-ES')} h = <strong>${b.turnos.toLocaleString('es-ES')} turnos de 8 h</strong> ≈ <strong>${b.diasNaturales.toLocaleString('es-ES')} días naturales</strong> con el calendario de convenio de ${gub.horasAnuales.toLocaleString('es-ES')} h/año (cada turno cubre ≈ ${b.diasPorTurno.toFixed(1)} días naturales). La bolsa cubriría desde el ${fmtCorta(b.fecha)} hasta tu jubilación el ${fmtCorta(principal.fecha)}.</p>
       </div>`);
     }
   }

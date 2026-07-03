@@ -77,18 +77,18 @@ function edadMayorOIgual(edad, [anos, meses]) {
   return edad.anos > anos || (edad.anos === anos && edad.meses >= meses);
 }
 
-// Resta N días laborables (lunes a viernes; no se descuentan festivos) a una
-// fecha. Devuelve el primer día del tramo cubierto: desde ese día ya no habría
-// que ir a trabajar si la bolsa cubre todos los laborables hasta `fecha`.
-export function restarDiasLaborables(fecha, dias) {
-  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-  let restantes = dias;
-  while (restantes > 0) {
-    d.setDate(d.getDate() - 1);
-    const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) restantes -= 1;
-  }
-  return d;
+// Bolsa de horas: convierte las horas acumuladas en tiempo de calendario
+// cubierto antes de la jubilación. Con un convenio de `horasAnuales` de
+// trabajo efectivo al año (GUB turno de día: 1.519 h), la bolsa cubre
+// horas/horasAnuales de un año de trabajo → esa misma fracción de año natural.
+export function restarHorasBolsa(fecha, horas, horasAnuales = 1519) {
+  const diasNaturales = Math.round((horas / horasAnuales) * 365.25);
+  return {
+    fecha: addDias(fecha, -diasNaturales),
+    diasNaturales,
+    turnos: Math.floor(horas / 8),
+    diasPorTurno: (365.25 / (horasAnuales / 8)),
+  };
 }
 
 /**
