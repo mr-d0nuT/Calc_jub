@@ -164,8 +164,14 @@ function renderResultado(r, nacimiento) {
       ${p.motivos.map((m) => `<p class="resultado-detalle">ℹ️ ${m}</p>`).join('')}
     </div>`);
     if (r.ordinaria) {
+      const adelanto = desgloseAnticipo(r.policia.resultado.fecha, r.ordinaria.fecha);
+      const adelantoMeses = adelanto.anos * 12 + adelanto.meses;
+      const notaAdelanto = adelantoMeses < r.policia.reduccionAplicadaMeses
+        ? `<p class="resultado-detalle">ℹ️ El adelanto (${fmtEdad(adelanto)}) es menor que la reducción (${fmtEdad({ anos: Math.floor(r.policia.reduccionAplicadaMeses / 12), meses: r.policia.reduccionAplicadaMeses % 12 })}) porque la reducción se aplica sobre la edad ordinaria exigida <em>en el momento de jubilarte</em> (${fmtEdad({ anos: r.policia.resultado.exigida[0], meses: r.policia.resultado.exigida[1] })}, al no acreditar aún la carrera larga entonces), mientras que tu fecha ordinaria de referencia sí se beneficia de la carrera larga.</p>`
+        : '';
       trozos.push(`<div class="resultado-bloque secundario">
-        <p><strong>Sin la reducción de policía local</strong> (jubilación ordinaria): <strong>${fmtFecha(r.ordinaria.fecha)}</strong>, al cumplir ${fmtEdad({ anos: r.ordinaria.exigida[0], meses: r.ordinaria.exigida[1] })}. Te adelantas <strong>${fmtEdad(desgloseAnticipo(r.policia.resultado.fecha, r.ordinaria.fecha))}</strong>.</p>
+        <p><strong>Sin la reducción de policía local</strong> (jubilación ordinaria): <strong>${fmtFecha(r.ordinaria.fecha)}</strong>, al cumplir ${fmtEdad({ anos: r.ordinaria.exigida[0], meses: r.ordinaria.exigida[1] })}. Te adelantas <strong>${fmtEdad(adelanto)}</strong>.</p>
+        ${notaAdelanto}
         <p class="resultado-detalle">${explicacionEdadOrdinaria(r.ordinaria)}</p>
       </div>`);
     }
