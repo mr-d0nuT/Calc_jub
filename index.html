@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calc_jub · Calculadora de fecha de jubilación</title>
+  <meta name="description" content="Calcula tu fecha exacta de jubilación a partir del informe de vida laboral de la Seguridad Social. Incluye jubilación anticipada de policía local (RD 1449/2018).">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+</head>
+<body>
+  <header>
+    <h1>📅 Calc_jub</h1>
+    <p class="subtitulo">Calculadora de fecha exacta de jubilación a partir de tu informe de vida laboral</p>
+    <p class="privacidad">🔒 Todo se procesa en tu navegador: el PDF nunca se envía a ningún servidor.</p>
+  </header>
+
+  <main>
+    <section class="tarjeta" id="zona-subida">
+      <h2>1 · Sube tu informe de vida laboral</h2>
+      <p>Descárgalo en PDF desde la <a href="https://portal.seg-social.gob.es/wps/portal/importass/importass/Categorias/Vida+laboral+e+informes/Informes+sobre+tu+situacion+laboral/Informe+de+tu+vida+laboral" target="_blank" rel="noopener">Sede Electrónica de la Seguridad Social (Import@ss)</a>.</p>
+      <div id="dropzone" tabindex="0" role="button" aria-label="Subir PDF de vida laboral">
+        <span id="dropzone-texto">Arrastra aquí el PDF o <u>haz clic para seleccionarlo</u></span>
+        <input type="file" id="input-pdf" accept="application/pdf" hidden>
+      </div>
+      <p id="error" class="error" hidden></p>
+      <p id="aviso-parser" class="aviso" hidden></p>
+    </section>
+
+    <section class="tarjeta" id="zona-datos">
+      <h2>2 · Revisa tus datos</h2>
+      <p class="nota">Se rellenan automáticamente desde el PDF; también puedes introducirlos o corregirlos a mano.</p>
+      <div id="resumen-persona" hidden></div>
+      <div class="campos">
+        <label>Fecha de nacimiento
+          <input type="date" id="nacimiento">
+        </label>
+        <label>Días cotizados (computables)
+          <input type="number" id="dias-cotizados" min="0" step="1" placeholder="p. ej. 8408">
+        </label>
+        <label>Fecha del informe / de referencia
+          <input type="date" id="fecha-informe">
+        </label>
+      </div>
+      <details id="detalle-situaciones" hidden>
+        <summary>Ver situaciones del informe</summary>
+        <div class="tabla-scroll">
+          <table id="tabla-situaciones">
+            <thead>
+              <tr><th>Régimen</th><th>Empresa</th><th>Alta</th><th>Baja</th><th>Días</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section class="tarjeta" id="zona-opciones">
+      <h2>3 · Opciones</h2>
+      <label class="check">
+        <input type="checkbox" id="sigue-cotizando" checked>
+        Sigo cotizando (de alta) hasta la fecha de jubilación
+      </label>
+      <label class="check">
+        <input type="checkbox" id="es-policia">
+        Soy policía local <span class="etiqueta">RD 1449/2018 · jubilación anticipada</span>
+      </label>
+      <div id="campos-policia" class="campos" hidden>
+        <label>Años completos trabajados como policía local
+          <input type="number" id="policia-trabajados" min="0" max="50" step="1" value="">
+        </label>
+        <label>Años cotizados como policía local
+          <input type="number" id="policia-cotizados" min="0" max="50" step="1" value="">
+        </label>
+      </div>
+      <button id="btn-calcular">Calcular fecha de jubilación</button>
+    </section>
+
+    <section class="tarjeta resultado" id="zona-resultado" hidden>
+      <h2>Resultado</h2>
+      <div id="resultado"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Aviso:</strong> esta herramienta ofrece una <em>estimación orientativa</em> basada en el art. 205 y la disp. trans. 7.ª de la LGSS y en el RD 1449/2018. No tiene validez oficial: la fecha y condiciones definitivas las determina el INSS al resolver la solicitud.</p>
+    <p><a href="https://github.com/mr-d0nuT/Calc_jub" target="_blank" rel="noopener">Código fuente en GitHub</a></p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+:root {
+  --fondo: #f4f6f9;
+  --tarjeta: #ffffff;
+  --texto: #1c2733;
+  --texto-suave: #5b6b7b;
+  --acento: #0b6e4f;
+  --acento-claro: #e3f2ec;
+  --borde: #d9e0e8;
+  --error: #b3261e;
+  --aviso-fondo: #fff7e0;
+  --aviso-borde: #e6c15a;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #12181f;
+    --tarjeta: #1b232d;
+    --texto: #e8edf2;
+    --texto-suave: #9fb0c0;
+    --acento: #4ecb99;
+    --acento-claro: #143528;
+    --borde: #2c3947;
+    --error: #ff8a80;
+    --aviso-fondo: #33290f;
+    --aviso-borde: #8a742e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+  line-height: 1.55;
+}
+
+header, main, footer {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+header { padding-top: 2.5rem; text-align: center; }
+h1 { margin: 0; font-size: 2.2rem; letter-spacing: -0.02em; }
+.subtitulo { color: var(--texto-suave); margin: 0.4rem 0 0.2rem; }
+.privacidad { font-size: 0.9rem; color: var(--acento); margin-top: 0.6rem; }
+
+.tarjeta {
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+}
+
+h2 { margin-top: 0; font-size: 1.15rem; }
+.nota { color: var(--texto-suave); font-size: 0.9rem; }
+
+#dropzone {
+  border: 2px dashed var(--borde);
+  border-radius: 10px;
+  padding: 2.2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  color: var(--texto-suave);
+  transition: border-color 0.15s, background 0.15s;
+}
+#dropzone:hover, #dropzone:focus, #dropzone.arrastrando {
+  border-color: var(--acento);
+  background: var(--acento-claro);
+  color: var(--texto);
+  outline: none;
+}
+
+.error { color: var(--error); font-weight: 600; }
+.aviso {
+  background: var(--aviso-fondo);
+  border: 1px solid var(--aviso-borde);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.92rem;
+}
+
+#resumen-persona {
+  background: var(--acento-claro);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+label { display: block; font-size: 0.92rem; font-weight: 600; }
+
+input[type="date"], input[type="number"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 500;
+  margin: 0.6rem 0;
+}
+.check input { width: 1.15rem; height: 1.15rem; accent-color: var(--acento); }
+
+.etiqueta {
+  font-size: 0.75rem;
+  background: var(--acento-claro);
+  color: var(--acento);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-weight: 600;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--acento);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.08); }
+
+.tabla-scroll { overflow-x: auto; margin-top: 0.8rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { border-bottom: 1px solid var(--borde); padding: 0.45rem 0.6rem; text-align: left; white-space: nowrap; }
+th { color: var(--texto-suave); font-weight: 600; }
+td.num { text-align: right; }
+
+.resultado-fecha {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--acento);
+  margin: 0.3rem 0;
+}
+.resultado-bloque {
+  border-left: 4px solid var(--acento);
+  padding: 0.4rem 0 0.4rem 1rem;
+  margin: 1.1rem 0;
+}
+.resultado-bloque.secundario { border-left-color: var(--borde); }
+.resultado-detalle { color: var(--texto-suave); font-size: 0.92rem; margin: 0.2rem 0; }
+
+footer {
+  padding: 1rem 1.25rem 2.5rem;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
