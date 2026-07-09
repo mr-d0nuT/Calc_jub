@@ -80,14 +80,23 @@
       <button type="button" id="btn-gub" class="btn-toggle" aria-expanded="false">🕒 GUB · bolsa de horas específica</button>
       <div id="bloque-gub" hidden>
         <div class="campos">
-          <label>Horas que tendrás acumuladas en la bolsa al jubilarte
+          <label>Horas acumuladas <strong>hoy</strong> en la bolsa específica
             <input type="number" id="gub-horas" min="0" step="1" placeholder="p. ej. 480">
           </label>
           <label>Horas anuales de trabajo según convenio <span class="opcional">(GUB turno de día: 1.519 h)</span>
             <input type="number" id="gub-horas-anuales" min="1" step="1" value="1519">
           </label>
+          <label>Fecha de antigüedad (inicio de servicio) <span class="opcional">(para trienios: días de AP y de vacaciones)</span>
+            <input type="date" id="gub-antiguedad">
+          </label>
         </div>
-        <p class="nota">La bolsa se disfruta en turnos de <strong>8 h</strong>. Como tu calendario anual de convenio es de 1.519 h (~190 turnos/año), cada turno de bolsa cubre ≈ 1,9 días naturales: el cálculo resta de la fecha de jubilación la fracción de año de trabajo que cubren tus horas (horas ÷ horas anuales × 365).</p>
+        <p class="nota">A las horas que ya tienes se suma lo que <strong>seguirás acumulando cada año hasta la jubilación</strong>:
+          <strong>15 min por jornada trabajada</strong> (horas anuales ÷ 8 jornadas ≈ 190 turnos/año → ≈ 47,5 h/año),
+          <strong>2 días de Indispuesto</strong> al año,
+          los <strong>días adicionales de asuntos personales por trienios</strong> (2 al 6.º trienio y 1 más por cada trienio desde el 8.º, EBEP)
+          y los <strong>días adicionales de vacaciones por antigüedad</strong> (1/2/3/4 días a los 10/15/20/25 años de servicio),
+          guardados en la bolsa como un tesoro (cada día = turno de 8 h).
+          La bolsa se disfruta en turnos de <strong>8 h</strong>: con 1.519 h/año cada turno cubre ≈ 1,9 días naturales, y el cálculo resta de la fecha de jubilación la fracción de año de trabajo que cubre el total.</p>
       </div>
       <button id="btn-calcular">Calcular fecha de jubilación</button>
     </section>

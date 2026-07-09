@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn, restarHorasBolsa } from '../js/calc.js';
+import { calcularJubilacion, umbralDias, entradaTabla, escalaPolicia6, addAnosMeses, edadEn, restarHorasBolsa, diasAsuntosPropios, diasVacacionesAntiguedad, acumularBolsa } from '../js/calc.js';
 
 const d = (s) => new Date(s + 'T00:00:00');
 const iso = (f) =>
@@ -44,6 +44,59 @@ test('restarHorasBolsa con calendario de convenio GUB (1.519 h/año)', () => {
   assert.ok(Math.abs(b.diasPorTurno - 1.92) < 0.01);
   // 0 horas: la propia fecha.
   assert.equal(iso(restarHorasBolsa(d('2038-09-15'), 0).fecha), '2038-09-15');
+});
+
+test('diasAsuntosPropios: 2 al 6.º trienio, +1 por trienio desde el 8.º', () => {
+  assert.equal(diasAsuntosPropios(5), 0);
+  assert.equal(diasAsuntosPropios(6), 2);
+  assert.equal(diasAsuntosPropios(7), 2);
+  assert.equal(diasAsuntosPropios(8), 3);
+  assert.equal(diasAsuntosPropios(10), 5);
+});
+
+test('diasVacacionesAntiguedad según años de servicio', () => {
+  assert.equal(diasVacacionesAntiguedad(9), 0);
+  assert.equal(diasVacacionesAntiguedad(10), 1);
+  assert.equal(diasVacacionesAntiguedad(14), 1);
+  assert.equal(diasVacacionesAntiguedad(15), 2);
+  assert.equal(diasVacacionesAntiguedad(20), 3);
+  assert.equal(diasVacacionesAntiguedad(25), 4);
+  assert.equal(diasVacacionesAntiguedad(40), 4);
+});
+
+test('acumularBolsa: un año completo sin antigüedad (15 min + Indispuesto)', () => {
+  const a = acumularBolsa({ desde: d('2027-01-01'), hasta: d('2028-01-01'), horasAnuales: 1519 });
+  // 15 min × (1.519/8 = 189,9 jornadas) = 1.519/32 ≈ 47,5 h; Indispuesto 2 días = 16 h.
+  assert.ok(Math.abs(a.extra15.horas - 1519 / 32) < 0.01);
+  assert.ok(Math.abs(a.indispuesto.horas - 16) < 0.01);
+  assert.equal(a.ap.horas, 0);
+  assert.equal(a.va.horas, 0);
+  assert.ok(Math.abs(a.horasTotales - (1519 / 32 + 16)) < 0.01);
+});
+
+test('acumularBolsa: la antigüedad genera días de AP y VA', () => {
+  // En 2027 acredita 30 años de servicio → 10 trienios → 5 días de AP y 4 de VA.
+  const a = acumularBolsa({ desde: d('2027-01-01'), hasta: d('2028-01-01'), antiguedadInicio: d('1997-01-01'), horasAnuales: 1519 });
+  assert.equal(a.porAno.length, 1);
+  assert.equal(a.porAno[0].trienios, 10);
+  assert.equal(a.porAno[0].apDias, 5);
+  assert.equal(a.porAno[0].vaDias, 4);
+  assert.ok(Math.abs(a.ap.horas - 40) < 0.01);
+  assert.ok(Math.abs(a.va.horas - 32) < 0.01);
+  assert.ok(Math.abs(a.horasTotales - (1519 / 32 + 16 + 40 + 32)) < 0.01);
+});
+
+test('acumularBolsa: prorratea los años parciales', () => {
+  // Un año repartido entre 2027 y 2028: mismo total que un año completo (±redondeo bisiesto).
+  const a = acumularBolsa({ desde: d('2027-07-01'), hasta: d('2028-07-01'), horasAnuales: 1519 });
+  assert.equal(a.porAno.length, 2);
+  assert.ok(Math.abs(a.horasTotales - (1519 / 32 + 16)) < 0.5);
+});
+
+test('acumularBolsa: sin período no acumula nada', () => {
+  const a = acumularBolsa({ desde: d('2028-01-01'), hasta: d('2027-01-01') });
+  assert.equal(a.horasTotales, 0);
+  assert.equal(a.porAno.length, 0);
 });
 
 test('carrera larga: se jubila a los 65', () => {

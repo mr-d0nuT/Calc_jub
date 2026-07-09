@@ -91,6 +91,75 @@ export function restarHorasBolsa(fecha, horas, horasAnuales = 1519) {
   };
 }
 
+// Días de asuntos personales adicionales por antigüedad (EBEP art. 48.2):
+// 2 al perfeccionar el 6.º trienio y 1 más por cada trienio a partir del 8.º.
+export function diasAsuntosPropios(trienios) {
+  if (trienios < 6) return 0;
+  return 2 + Math.max(0, trienios - 7);
+}
+
+// Días adicionales de vacaciones de verano por años de servicio:
+// 10 años → 1 · 15 años → 2 · 20 años → 3 · 25 años → 4.
+export function diasVacacionesAntiguedad(anosServicio) {
+  if (anosServicio >= 25) return 4;
+  if (anosServicio >= 20) return 3;
+  if (anosServicio >= 15) return 2;
+  if (anosServicio >= 10) return 1;
+  return 0;
+}
+
+// Horas que se cargarán en la bolsa específica entre `desde` y `hasta`
+// (día de fiesta = turno de 8 h; los años parciales se prorratean):
+//  - 15 min por jornada trabajada: horasAnuales/8 jornadas al año → horasAnuales/32 h;
+//  - Indispuesto: 2 días al año;
+//  - asuntos personales por trienios y vacaciones por antigüedad, que se
+//    guardan cada año en la bolsa en vez de disfrutarse.
+export function acumularBolsa({ desde, hasta, antiguedadInicio = null, horasAnuales = 1519 }) {
+  const res = {
+    horasTotales: 0,
+    extra15: { horas: 0, jornadasAno: horasAnuales / 8 },
+    indispuesto: { horas: 0, dias: 0 },
+    ap: { horas: 0, dias: 0 },
+    va: { horas: 0, dias: 0 },
+    porAno: [],
+  };
+  if (!desde || !hasta || hasta <= desde) return res;
+  for (let ano = desde.getFullYear(); ano <= hasta.getFullYear(); ano++) {
+    const iniAno = new Date(ano, 0, 1);
+    const finAno = new Date(ano + 1, 0, 1);
+    const ini = desde > iniAno ? desde : iniAno;
+    const fin = hasta < finAno ? hasta : finAno;
+    const frac = diasEntre(ini, fin) / diasEntre(iniAno, finAno);
+    if (frac <= 0) continue;
+    // Antigüedad acreditada al final del tramo cubierto de ese año.
+    const anosServicio = antiguedadInicio
+      ? Math.max(0, edadEn(antiguedadInicio, addDias(fin, -1)).anos)
+      : 0;
+    const trienios = Math.floor(anosServicio / 3);
+    const apDias = diasAsuntosPropios(trienios);
+    const vaDias = diasVacacionesAntiguedad(anosServicio);
+    const horas = {
+      extra15: (horasAnuales / 32) * frac,
+      indispuesto: 2 * 8 * frac,
+      ap: apDias * 8 * frac,
+      va: vaDias * 8 * frac,
+    };
+    res.extra15.horas += horas.extra15;
+    res.indispuesto.horas += horas.indispuesto;
+    res.indispuesto.dias += 2 * frac;
+    res.ap.horas += horas.ap;
+    res.ap.dias += apDias * frac;
+    res.va.horas += horas.va;
+    res.va.dias += vaDias * frac;
+    res.porAno.push({
+      ano, frac, anosServicio, trienios, apDias, vaDias,
+      horas: horas.extra15 + horas.indispuesto + horas.ap + horas.va,
+    });
+  }
+  res.horasTotales = res.extra15.horas + res.indispuesto.horas + res.ap.horas + res.va.horas;
+  return res;
+}
+
 /**
  * Calcula la fecha de jubilación.
  *

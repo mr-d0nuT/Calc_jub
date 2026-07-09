@@ -11,6 +11,13 @@ Calculadora de la **fecha exacta de jubilación** a partir del **informe de vida
 3. Calcula la fecha exacta en la que puedes jubilarte:
    - **Jubilación ordinaria** según el art. 205 y la disp. trans. 7.ª de la LGSS (tabla transitoria 2013→2027: 65 años con carrera larga o hasta 67 años).
    - **Policía local**: reducción de edad de 0,20 × años completos de servicio efectivo, con tope de 5 años (6 con carrera larga según la escala transitoria), exigiendo 15 años cotizados como policía local (RD 1449/2018).
+4. Opcionalmente (GUB), proyecta la **bolsa de horas específica** hasta la jubilación para saber **cuándo puedes dejar de ir a trabajar**. A las horas acumuladas hoy suma cada año:
+   - **15 min por jornada trabajada** (horas anuales de convenio ÷ 8 → ≈ 47,5 h/año con 1.519 h);
+   - **2 días de Indispuesto** al año;
+   - los **días adicionales de asuntos personales por trienios** (EBEP: 2 al perfeccionar el 6.º trienio y 1 más por cada trienio desde el 8.º);
+   - los **días adicionales de vacaciones por antigüedad** (1/2/3/4 días a los 10/15/20/25 años de servicio).
+
+   Cada día de fiesta equivale a un turno de 8 h y la bolsa se convierte en días naturales con el calendario de convenio (con 1.519 h/año, cada turno cubre ≈ 1,9 días).
 
 ## Privacidad
 

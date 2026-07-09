@@ -339,6 +339,10 @@ footer {
 }
 .gub .hero-countdown { background: var(--tarjeta); }
 .gub .resultado-detalle { margin-top: 0.6rem; }
+.gub table { background: var(--tarjeta); text-align: left; }
+.gub details { margin-top: 0.8rem; text-align: left; }
+.gub summary { cursor: pointer; color: var(--texto-suave); font-size: 0.9rem; }
+.gub .aviso { text-align: left; }
 
 /* Línea temporal de la vida laboral */
 #viz-vida-laboral { margin: 1.2rem 0 0.6rem; }

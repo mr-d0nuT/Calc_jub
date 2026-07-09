@@ -1,6 +1,6 @@
 import * as pdfjsLib from '../vendor/pdf.min.mjs';
 import { reconstruirLineas, parseVidaLaboral } from './parser.js';
-import { calcularJubilacion, edadEn, restarHorasBolsa } from './calc.js';
+import { calcularJubilacion, edadEn, restarHorasBolsa, acumularBolsa } from './calc.js';
 import { vizHero, vizKpis, vizMeter, vizCalendario, vizTimeline, activarTooltips, fraseCuentaAtras } from './viz.js';
 
 let ultimasSituaciones = [];
@@ -115,7 +115,11 @@ function calcular() {
   }
 
   const gub = !$('bloque-gub').hidden
-    ? { horas: Number($('gub-horas').value) || 0, horasAnuales: Number($('gub-horas-anuales').value) || 1519 }
+    ? {
+        horas: Number($('gub-horas').value) || 0,
+        horasAnuales: Number($('gub-horas-anuales').value) || 1519,
+        antiguedad: deInputDate($('gub-antiguedad').value),
+      }
     : null;
 
   const r = calcularJubilacion(entrada);
@@ -160,14 +164,8 @@ function renderResultado(r, nacimiento, gub = null) {
       <div class="viz-panel">${vizMeter(inicioVida, hoy, principal.fecha)}</div>
     </div>`);
 
-    if (gub && gub.horas > 0) {
-      const b = restarHorasBolsa(principal.fecha, gub.horas, gub.horasAnuales);
-      trozos.push(`<div class="gub">
-        <p class="gub-titulo">🕒 Con tu bolsa de horas (GUB), podrías dejar de ir a trabajar el</p>
-        <p class="gub-fecha">${fmtFecha(b.fecha)}</p>
-        <p class="hero-countdown ${b.fecha <= hoy ? 'pasada' : ''}">${b.fecha <= hoy ? '✅ ' : '⏳ '}${fraseCuentaAtras(hoy, b.fecha)}</p>
-        <p class="resultado-detalle">${gub.horas.toLocaleString('es-ES')} h = <strong>${b.turnos.toLocaleString('es-ES')} turnos de 8 h</strong> ≈ <strong>${b.diasNaturales.toLocaleString('es-ES')} días naturales</strong> con el calendario de convenio de ${gub.horasAnuales.toLocaleString('es-ES')} h/año (cada turno cubre ≈ ${b.diasPorTurno.toFixed(1)} días naturales). La bolsa cubriría desde el ${fmtCorta(b.fecha)} hasta tu jubilación el ${fmtCorta(principal.fecha)}.</p>
-      </div>`);
+    if (gub) {
+      trozos.push(renderGub(gub, principal.fecha, hoy));
     }
   }
 
@@ -209,6 +207,72 @@ function renderResultado(r, nacimiento, gub = null) {
   $('resultado').innerHTML = trozos.join('');
   $('zona-resultado').hidden = false;
   $('zona-resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Bloque GUB: bolsa actual + lo que se acumulará cada año hasta la jubilación
+// (15 min/jornada, Indispuesto, AP por trienios y VA por antigüedad) → fecha
+// en la que se puede dejar de ir a trabajar.
+function renderGub(gub, fechaJubilacion, hoy) {
+  const fmtH = (h) => h.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+  const fmtD = (d) => d.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+  const acum = acumularBolsa({
+    desde: hoy,
+    hasta: fechaJubilacion,
+    antiguedadInicio: gub.antiguedad,
+    horasAnuales: gub.horasAnuales,
+  });
+  const total = gub.horas + acum.horasTotales;
+  if (total <= 0) return '';
+  const b = restarHorasBolsa(fechaJubilacion, total, gub.horasAnuales);
+
+  const conceptos = [
+    ['Bolsa acumulada hoy', gub.horas, null],
+    [`15 min × jornada trabajada (≈ ${fmtH(acum.extra15.jornadasAno)} jornadas/año → ${fmtD(gub.horasAnuales / 32)} h/año)`, acum.extra15.horas, null],
+    ['Indispuesto (2 días/año)', acum.indispuesto.horas, acum.indispuesto.dias],
+    ['Asuntos personales por trienios (EBEP)', acum.ap.horas, acum.ap.dias],
+    ['Vacaciones adicionales por antigüedad', acum.va.horas, acum.va.dias],
+  ];
+  const filasConceptos = conceptos
+    .filter(([, horas]) => horas > 0)
+    .map(([nombre, horas, dias]) =>
+      `<tr><td>${nombre}</td><td class="num">${dias != null ? `${fmtD(dias)} días` : '—'}</td><td class="num"><strong>${fmtH(horas)} h</strong></td></tr>`)
+    .join('');
+
+  const filasAno = acum.porAno.map((a) =>
+    `<tr><td>${a.ano}${a.frac < 0.995 ? ' (parcial)' : ''}</td>` +
+    `<td class="num">${gub.antiguedad ? `${a.anosServicio} años (${a.trienios} trienios)` : '—'}</td>` +
+    `<td class="num">${a.apDias}</td><td class="num">${a.vaDias}</td>` +
+    `<td class="num">${fmtH(a.horas)} h</td></tr>`).join('');
+
+  const avisoAntiguedad = !gub.antiguedad
+    ? '<p class="aviso">⚠️ Sin la fecha de antigüedad no se incluyen los días de asuntos personales por trienios ni las vacaciones adicionales: indícala en el paso 3 para el cálculo completo.</p>'
+    : '';
+
+  return `<div class="gub">
+    <p class="gub-titulo">🕒 Con tu bolsa de horas (GUB) y lo que acumularás hasta la jubilación, podrías dejar de ir a trabajar el</p>
+    <p class="gub-fecha">${fmtFecha(b.fecha)}</p>
+    <p class="hero-countdown ${b.fecha <= hoy ? 'pasada' : ''}">${b.fecha <= hoy ? '✅ ' : '⏳ '}${fraseCuentaAtras(hoy, b.fecha)}</p>
+    ${avisoAntiguedad}
+    <div class="tabla-scroll">
+      <table>
+        <thead><tr><th>Concepto</th><th>Días de fiesta</th><th>Horas</th></tr></thead>
+        <tbody>${filasConceptos}
+          <tr><td><strong>Total en la bolsa al jubilarte</strong></td><td class="num"></td><td class="num"><strong>${fmtH(total)} h</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="resultado-detalle">${fmtH(total)} h = <strong>${b.turnos.toLocaleString('es-ES')} turnos de 8 h</strong> ≈ <strong>${b.diasNaturales.toLocaleString('es-ES')} días naturales</strong> con el calendario de convenio de ${gub.horasAnuales.toLocaleString('es-ES')} h/año (cada turno cubre ≈ ${b.diasPorTurno.toFixed(1)} días naturales). La bolsa cubriría desde el ${fmtCorta(b.fecha)} hasta tu jubilación el ${fmtCorta(fechaJubilacion)}.</p>
+    <details>
+      <summary>Ver acumulación año a año</summary>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th>Año</th><th>Antigüedad</th><th>Días AP</th><th>Días VA</th><th>Horas del año</th></tr></thead>
+          <tbody>${filasAno}</tbody>
+        </table>
+      </div>
+      <p class="nota">Se supone que sigues generando todos los conceptos hasta la fecha de jubilación (mientras gastas la bolsa sigues de alta) y que guardas íntegros en la bolsa los días de AP, VA e Indispuesto de cada año.</p>
+    </details>
+  </div>`;
 }
 
 // Explica por qué se aplica 65 (carrera larga) o la edad general (67 desde
@@ -253,6 +317,11 @@ dropzone.addEventListener('drop', (e) => {
 
 $('es-policia').addEventListener('change', (e) => {
   $('bloque-policia').hidden = !e.target.checked;
+});
+// La fecha de inicio como policía suele coincidir con la antigüedad: se copia
+// al campo del bloque GUB si aún está vacío.
+$('policia-inicio').addEventListener('change', (e) => {
+  if (!$('gub-antiguedad').value) $('gub-antiguedad').value = e.target.value;
 });
 $('btn-gub').addEventListener('click', () => {
   const abierto = $('bloque-gub').hidden;
